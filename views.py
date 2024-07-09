@@ -1,4 +1,4 @@
-from utils import get_template, get_static
+from utils import get_template, get_static, HTTPResponse
 
 
 def index():
@@ -11,3 +11,7 @@ def about():
 
 def hello():
     return get_static("hello.txt")
+
+
+def name(name):
+    return HTTPResponse(name)

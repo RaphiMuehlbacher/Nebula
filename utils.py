@@ -11,8 +11,8 @@ def get_template(template_name: str) -> str:
 
     return f"""HTTP/1.1 200 OK
 
-    {content}
-    """
+{content}
+"""
 
 
 def get_static(file_path: str) -> str:
@@ -30,3 +30,17 @@ def get_static(file_path: str) -> str:
 
 File not found
 """
+
+
+def HTTPResponse(content: str) -> str:
+    return f"""HTTP/1.1 200 OK
+
+{content}
+"""
+
+def not_found_404():
+    return """HTTP/1.1 404 Not Found
+
+Resource not found
+"""
+

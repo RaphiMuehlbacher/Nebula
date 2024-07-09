@@ -2,6 +2,7 @@ import socket
 import os
 
 from urls import urlpatterns
+from utils import not_found_404
 
 # Define global settings
 HOST, PORT = '', 8080
@@ -12,14 +13,24 @@ def handle_request(request):
     request_line = request.splitlines()[0]
     request_method, request_path, _ = request_line.split()
 
+    # view without parameter
     if request_path in urlpatterns.keys():
-        return urlpatterns[request_path]
+        view_func = urlpatterns[request_path]
+        return view_func()
+
+    # view with parameter
+    for url_pattern, view_func in urlpatterns.items():
+        if url_pattern.count("<") > 0 and url_pattern.count(">") > 0:
+            url_parts = url_pattern.split("/")
+            request_parts = request_path.split("/")
+
+            if len(url_parts) == len(request_parts):
+                for i in range(len(url_parts)):
+                    if url_parts[i].startswith("<") and url_parts[i].endswith(">"):
+                        return view_func(request_parts[i])
 
     # Default 404 response
-    return """HTTP/1.1 404 Not Found
-
-Resource not found
-"""
+    return not_found_404()
 
 
 def start_server():
