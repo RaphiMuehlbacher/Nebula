@@ -1,12 +1,12 @@
-from utils import get_template, get_static, HTTPResponse
+from utils import get_template, get_static, HTTPResponse, render
 
 
 def index():
-    return get_template("index.html")
+    return render("index.html", {"name": "Raphi"})
 
 
 def about():
-    return get_template("about.html")
+    return render("about.html")
 
 
 def hello():
@@ -15,3 +15,5 @@ def hello():
 
 def name(name):
     return HTTPResponse(name)
+
+

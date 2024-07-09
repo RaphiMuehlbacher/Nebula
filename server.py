@@ -11,6 +11,7 @@ HOST, PORT = '', 8080
 def handle_request(request):
     """Handles incoming HTTP requests and returns the appropriate response."""
     request_line = request.splitlines()[0]
+    print(request_line)
     request_method, request_path, _ = request_line.split()
 
     # view without parameter
@@ -43,7 +44,6 @@ def start_server():
     while True:
         client_connection, client_address = server_socket.accept()
         request = client_connection.recv(1024).decode('utf-8')
-        print(request)
 
         response = handle_request(request)
         client_connection.sendall(response.encode('utf-8'))
