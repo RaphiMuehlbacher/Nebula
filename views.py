@@ -1,4 +1,4 @@
-from utils import get_template, get_static, HTTPResponse, render
+from web_server.utils import get_template, get_static, HTTPResponse, render
 
 
 def index():
