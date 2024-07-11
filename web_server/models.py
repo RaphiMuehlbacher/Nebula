@@ -1,19 +1,22 @@
 import sqlite3
 
-from web_server.fields import Field, IntegerField
+from web_server.fields import Field
+from typing import TypeVar
 
 DATABASE = "db.sqlite3"
 
 
 class QuerySet:
-    def __init__(self, model_cls):
+    """Represents a query set for interacting with database models."""
+    def __init__(self, model_cls) -> None:
         self.model_cls = model_cls
         self._db = sqlite3.connect(DATABASE)
         self._cursor = self._db.cursor()
         self._table = model_cls.__name__.lower()
         self.create_table()
 
-    def create_table(self):
+    def create_table(self) -> None:
+        """Create a database table if it does not exist based on the model's fields."""
         fields = ['id INTEGER PRIMARY KEY AUTOINCREMENT'] + \
                  [f'{field} {getattr(self.model_cls, field).field_type}' for field in self.model_cls._fields()
                   if field != "id"]
@@ -22,32 +25,30 @@ class QuerySet:
         self._db.commit()
 
     def all(self):
+        """Retrieve all objects from the database table."""
         query = f'SELECT * FROM {self._table} ORDER BY id'
         self._cursor.execute(query)
         rows = self._cursor.fetchall()
-        print("Raw rows from database:")
-        print(rows)  # Print out raw rows for debugging
-        users = []
+        objects = []
         for row in rows:
-            id = row[0]
-            age = row[1]
-            name = row[2]
-            new_row = [age, name, id]
-            user_data = dict(zip(self.model_cls._fields() + ['id'], new_row))
-            print(user_data)
-            user = self.model_cls(**user_data)
-            users.append(user)
-        return users
+            field_names = ['id'] + self.model_cls._fields()
+            object_data = dict(zip(field_names, row))
+            print(object_data)
+            user = self.model_cls(**object_data)
+            objects.append(user)
+        return objects
 
     def filter(self, **kwargs):
+        """Filter objects based on given conditions."""
         conditions = [f'{key}="{value}"' for key, value in kwargs.items()]
         conditions_str = ' AND '.join(conditions)
         query = f'SELECT * FROM {self._table} WHERE {conditions_str}'
         self._cursor.execute(query)
         rows = self._cursor.fetchall()
-        return [self.model_cls(**dict(zip(self.model_cls._fields() + ['id'], row))) for row in rows]
+        return [self.model_cls(**dict(zip(["id"] + self.model_cls._fields(), row))) for row in rows]
 
     def get(self, **kwargs):
+        """Retrieve a single object matching the given conditions."""
         results = self.filter(**kwargs)
         if len(results) == 1:
             return results[0]
@@ -57,6 +58,11 @@ class QuerySet:
 
 
 class ModelMeta(type):
+    """
+    Metaclass for the base model class.
+
+    This metaclass adds a QuerySet instance to each model class created using it.
+    """
     def __new__(cls, name, bases, attrs):
         new_class = super().__new__(cls, name, bases, attrs)
         new_class.objects = QuerySet(new_class)
@@ -64,14 +70,23 @@ class ModelMeta(type):
 
 
 class Model(metaclass=ModelMeta):
-    id = IntegerField()
+    """
+    Base model class representing a database record.
 
+    This class provides methods for interacting with the database.
+    """
     def __init__(self, **kwargs):
+        self.id = kwargs.get('id', None)
         for field in self._fields():
             setattr(self, field, kwargs.get(field, None))
-        self.id = kwargs.get('id', None)
 
     def save(self):
+        """
+        Save the current instance into the database.
+
+        If the instance already exists in the database (i.e., has an id), it will update the existing record;
+        otherwise, it will insert a new record.
+        """
         query = QuerySet(self.__class__)
         fields = ', '.join([f'"{field}"' for field in self._fields() if field != 'id'])
         values = ', '.join([f'"{getattr(self, field)}"' for field in self._fields() if field != 'id'])
@@ -87,8 +102,8 @@ class Model(metaclass=ModelMeta):
 
     @classmethod
     def _fields(cls):
+        """Retrieve a list of field names for the model class."""
         return [field for field in cls.__dict__.keys() if
                 not field.startswith('__') and isinstance(getattr(cls, field), Field)]
-
 
 

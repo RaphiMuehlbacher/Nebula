@@ -6,7 +6,7 @@ class User(Model):
     age = IntegerField()
     name = CharField()
 
-    def __init__(self, **kwargs):
-        self.age = kwargs.get('age', None)
-        self.name = kwargs.get('name', None)
-        self.id = kwargs.get('id', None)
+
+class Book(Model):
+    author = CharField()
+    length = IntegerField()

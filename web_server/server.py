@@ -1,25 +1,22 @@
 import socket
-import os
 
 from urls import urlpatterns
-from utils import not_found_404
+from web_server.utils import not_found_404
 
 # Define global settings
 HOST, PORT = '', 8080
 
 
-def handle_request(request):
+def handle_request(request: str) -> str:
     """Handles incoming HTTP requests and returns the appropriate response."""
     request_line = request.splitlines()[0]
     print(request_line)
     request_method, request_path, _ = request_line.split()
 
-    # view without parameter
     if request_path in urlpatterns.keys():
         view_func = urlpatterns[request_path]
         return view_func()
 
-    # view with parameter
     for url_pattern, view_func in urlpatterns.items():
         if url_pattern.count("<") > 0 and url_pattern.count(">") > 0:
             url_parts = url_pattern.split("/")
@@ -30,12 +27,16 @@ def handle_request(request):
                     if url_parts[i].startswith("<") and url_parts[i].endswith(">"):
                         return view_func(request_parts[i])
 
-    # Default 404 response
     return not_found_404()
 
 
 def start_server():
-    """Starts the web server."""
+    """
+     Starts the web server and listens for incoming connections.
+
+    This function binds to the specified host and port, listens for incoming
+    connections, and handles each client request in a loop.
+    """
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_socket.bind((HOST, PORT))
     server_socket.listen(5)
