@@ -1,5 +1,5 @@
-from web_server.fields import IntegerField, CharField
-from web_server.models import Model
+from nebula.fields import IntegerField, CharField
+from nebula.models import Model
 
 
 class User(Model):

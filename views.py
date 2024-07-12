@@ -1,5 +1,4 @@
-from web_server.fields import IntegerField
-from web_server.utils import get_template, get_static, HTTPResponse, render
+from nebula.utils import HTTPResponse, render
 from tst_models import User
 
 

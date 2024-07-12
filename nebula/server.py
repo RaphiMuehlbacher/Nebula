@@ -4,7 +4,8 @@ from typing import Callable
 from urllib.parse import parse_qs
 
 from urls import urlpatterns
-from web_server.utils import HTTPResponse
+
+from nebula.utils import HTTPResponse
 
 # Define global settings
 HOST, PORT = '', 8080
@@ -87,8 +88,9 @@ class TCPServer:
             response = handle_request(request)
             client_connection.sendall(str(response).encode())
             client_connection.close()
-
+            
 
 if __name__ == '__main__':
-    tcpserver = TCPServer(HOST, PORT)
-    tcpserver.start()
+    server = TCPServer(HOST, PORT)
+    server.start()
+

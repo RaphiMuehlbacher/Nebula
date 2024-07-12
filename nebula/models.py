@@ -1,6 +1,6 @@
 import sqlite3
 
-from web_server.fields import Field
+from nebula.fields import Field
 
 DATABASE = "db.sqlite3"
 
