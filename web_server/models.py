@@ -32,7 +32,6 @@ class QuerySet:
         for row in rows:
             field_names = ['id'] + self.model_cls._fields()
             object_data = dict(zip(field_names, row))
-            print(object_data)
             user = self.model_cls(**object_data)
             objects.append(user)
         return objects

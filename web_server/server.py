@@ -1,6 +1,7 @@
 import re
 import socket
 from typing import Callable
+from urllib.parse import parse_qs
 
 from urls import urlpatterns
 from web_server.utils import not_found_404, HTTPResponse
@@ -9,7 +10,7 @@ from web_server.utils import not_found_404, HTTPResponse
 HOST, PORT = '', 8080
 
 
-def get_compiled_urlpatterns(urlpatterns: dict[str, Callable[..., str]]):
+def get_compiled_urlpatterns(urlpatterns: dict[str, Callable[..., str]]) -> list[tuple[re.Pattern[str], Callable[..., str]]]:
     compiled_urlpatterns = []
 
     for url_pattern, view_func in urlpatterns.items():
@@ -33,14 +34,31 @@ def handle_request(request: str) -> str:
             match = regex_pattern.match(request_path)
             if match:
                 kwargs = match.groupdict()
-                return view_func(**kwargs)
+                request = Request(request_method, request_path)
+                return view_func(request=request, **kwargs)
 
         return not_found_404()
 
     elif request_method == "POST":
         _, request_body = request.split("\r\n\r\n", 1)
-        print(request_body)
-        pass
+        print("request_body", request_body)
+        form_data = parse_qs(request_body)
+        form_data = {k: v[0] for k, v in form_data.items()}
+        for regex_pattern, view_func in compiled_urlpatterns:
+            match = regex_pattern.match(request_path)
+            if match:
+                kwargs = match.groupdict()
+                request = Request(request_method, request_path, form_data)
+                return view_func(request=request, **kwargs)
+
+        return not_found_404()
+
+
+class Request:
+    def __init__(self, method, path, form_data=None):
+        self.method: str = method
+        self.path: str = path
+        self.form_data: dict[str, str] = form_data or {}
 
 
 class TCPServer:
@@ -57,7 +75,7 @@ class TCPServer:
         """
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server_socket.bind((self.host, self.port))
-        server_socket.listen(5)
+        server_socket.listen()
 
         print("Listening at", server_socket.getsockname())
 
