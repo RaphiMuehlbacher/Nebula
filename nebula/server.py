@@ -1,9 +1,8 @@
+# server.py
 import re
 import socket
 from typing import Callable
 from urllib.parse import parse_qs
-
-from urls import urlpatterns
 
 from nebula.utils import HTTPResponse
 
@@ -27,7 +26,7 @@ def handle_request(request: str) -> HTTPResponse:
     request_line = request.splitlines()[0]
     print(request)
     request_method, request_path, _ = request_line.split()
-
+    urlpatterns = [""]
     compiled_urlpatterns = get_compiled_urlpatterns(urlpatterns)
 
     if request_method == "GET":

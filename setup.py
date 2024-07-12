@@ -9,8 +9,11 @@ setup(
     author='Raphael Mühlbacher',
     author_email='raphi.muehlbacher@gmail.com',
     url='https://github.com/RaphiMuehlbacher/Nebula',
-    packages=find_packages(exclude=['tests', 'docs']),
+    packages=find_packages(),
     include_package_data=True,
+    package_data={
+        'nebula': ['project_template/*'],
+    },
     install_requires=[
         "Jinja2~=3.1.4",
         "setuptools~=69.2.0"
@@ -24,4 +27,9 @@ setup(
         'Programming Language :: Python :: 3.12',
     ],
     python_requires='>=3.12',
+    entry_points={
+        'console_scripts': [
+            'nebula-admin=nebula.manage:main'
+        ]
+    },
 )

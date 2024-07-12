@@ -1,3 +1,4 @@
+# fields.py
 class Field:
     """Base class representing a database field."""
     def __init__(self, field_type):
