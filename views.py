@@ -7,9 +7,7 @@ def index():
     return render("index.html")
 
 
-def user() -> str:
-    Raphi = User(age=14, name="Raphi")
-    Raphi.save()
-    users = User.objects.get(id=1)
-
+def user(name, age, moin) -> str:
+    print(name, age, moin)
+    users = User.objects.filter(name=name, age=age)
     return render("user.html", {"users": users})

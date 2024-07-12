@@ -1,7 +1,6 @@
 import sqlite3
 
 from web_server.fields import Field
-from typing import TypeVar
 
 DATABASE = "db.sqlite3"
 

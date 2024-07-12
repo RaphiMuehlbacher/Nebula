@@ -20,4 +20,3 @@ class CharField(Field):
     """Character field for the database."""
     def __init__(self):
         super().__init__('TEXT')
-
