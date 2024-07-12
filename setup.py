@@ -1,14 +1,14 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='Vex',
+    name='Nebula',
     version='0.1.0',
     description='A custom web server framework',
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
     author='Raphael Mühlbacher',
     author_email='raphi.muehlbacher@gmail.com',
-    url='https://github.com/RaphiMuehlbacher/Vex',
+    url='https://github.com/RaphiMuehlbacher/Nebula',
     packages=find_packages(exclude=['tests', 'docs']),
     include_package_data=True,
     install_requires=[

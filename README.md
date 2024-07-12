@@ -1,6 +1,6 @@
-# Vex
+# Nebula
 
-Vex is a lightweight web server framework, designed to simplify web application development with Python.
+Nebula is a lightweight web server framework, designed to simplify web application development with Python.
 
 ## Features
 
