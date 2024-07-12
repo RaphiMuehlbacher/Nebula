@@ -3,7 +3,7 @@ from web_server.utils import get_template, get_static, HTTPResponse, render
 from tst_models import User
 
 
-def index(request):
+def index(request) -> HTTPResponse:
     if request.method == "GET":
         return render("index.html")
     elif request.method == "POST":
@@ -13,6 +13,6 @@ def index(request):
         return HTTPResponse(form_data)
 
 
-def user(request) -> str:
+def user(request) -> HTTPResponse:
     users = User.objects.all()
     return render("user.html", {"users": users})

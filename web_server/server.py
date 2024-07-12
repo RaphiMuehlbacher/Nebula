@@ -4,13 +4,13 @@ from typing import Callable
 from urllib.parse import parse_qs
 
 from urls import urlpatterns
-from web_server.utils import not_found_404, HTTPResponse
+from web_server.utils import HTTPResponse
 
 # Define global settings
 HOST, PORT = '', 8080
 
 
-def get_compiled_urlpatterns(urlpatterns: dict[str, Callable[..., str]]) -> list[tuple[re.Pattern[str], Callable[..., str]]]:
+def get_compiled_urlpatterns(urlpatterns: dict[str, Callable[..., HTTPResponse]]) -> list[tuple[re.Pattern[str], Callable[..., HTTPResponse]]]:
     compiled_urlpatterns = []
 
     for url_pattern, view_func in urlpatterns.items():
@@ -20,7 +20,7 @@ def get_compiled_urlpatterns(urlpatterns: dict[str, Callable[..., str]]) -> list
     return compiled_urlpatterns
 
 
-def handle_request(request: str) -> str:
+def handle_request(request: str) -> HTTPResponse:
     """Handles incoming HTTP requests and returns the appropriate response."""
 
     request_line = request.splitlines()[0]
@@ -37,7 +37,7 @@ def handle_request(request: str) -> str:
                 request = Request(request_method, request_path)
                 return view_func(request=request, **kwargs)
 
-        return not_found_404()
+        return HTTPResponse("Page not found", 404)
 
     elif request_method == "POST":
         _, request_body = request.split("\r\n\r\n", 1)
@@ -51,7 +51,7 @@ def handle_request(request: str) -> str:
                 request = Request(request_method, request_path, form_data)
                 return view_func(request=request, **kwargs)
 
-        return not_found_404()
+        return HTTPResponse("Page not found", 404)
 
 
 class Request:
@@ -85,7 +85,7 @@ class TCPServer:
             request = client_connection.recv(1024).decode()
 
             response = handle_request(request)
-            client_connection.sendall(response.encode())
+            client_connection.sendall(str(response).encode())
             client_connection.close()
 
 
