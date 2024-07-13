@@ -16,7 +16,8 @@ setup(
     },
     install_requires=[
         "Jinja2~=3.1.4",
-        "setuptools~=69.2.0"
+        "setuptools~=69.2.0",
+        "watchdog~=4.0.1"
     ],
     classifiers=[
         'Development Status :: 3 - Alpha',
