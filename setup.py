@@ -1,14 +1,15 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='Nebula',
-    version='0.1.1',
+    name='Nebula-web',
+    version='0.1.0',
     description='A custom web server framework',
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
     author='Raphael Mühlbacher',
     author_email='raphi.muehlbacher@gmail.com',
     url='https://github.com/RaphiMuehlbacher/Nebula',
+    download_url='https://github.com/RaphiMuehlbacher/Nebula/archive/refs/tags/v0.1.tar.gz',
     packages=find_packages(),
     include_package_data=True,
     package_data={
