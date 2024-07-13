@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='Nebula',
-    version='0.1.0',
+    version='0.1.1',
     description='A custom web server framework',
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
@@ -12,7 +12,7 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     package_data={
-        'nebula': ['project_template/*'],
+        'nebula': ['project_template/*', 'project_template/*/*']
     },
     install_requires=[
         "Jinja2~=3.1.4",

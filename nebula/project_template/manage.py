@@ -1,8 +1,8 @@
 # manage.py
 import argparse
+import os
 
 from nebula.commands import start_server
-
 
 def cli_parser():
     parser = argparse.ArgumentParser(description="Manage your web server.")
@@ -27,4 +27,5 @@ def main():
 
 
 if __name__ == "__main__":
+    os.environ.setdefault("NEBULA_SETTINGS", "{{ project_name }}\\settings.py")
     main()
