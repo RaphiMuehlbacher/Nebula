@@ -117,8 +117,15 @@ class FileChangeHandler(FileSystemEventHandler):
         self.server = server
 
     def on_any_event(self, event: FileSystemEvent) -> None:
-        print(f'File {event.src_path} changed. Restarting server...')
-        self.server.restart()
+        if not self.should_ignore(event.src_path):
+            print(f'File {event.src_path} changed. Restarting server...')
+            self.server.restart()
+
+    @staticmethod
+    def should_ignore(path: str) -> bool:
+        parts = path.split(os.sep)[1:]
+        ignore = any(part.startswith('.') for part in parts if part)
+        return ignore
 
 
 class TCPServer:
