@@ -14,7 +14,6 @@ def start_project(project_name):
     with importlib.resources.path('nebula', 'project_template') as template_dir:
         copy_template_contents(template_dir, os.getcwd(), project_name)
 
-    os.remove("__init__.py")
     os.rename(os.path.join(os.getcwd(), "project_name"), project_name)
     print(f"Created project '{project_name}' successfully.")
 
