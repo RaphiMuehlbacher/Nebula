@@ -2,7 +2,9 @@
 import argparse
 import os
 
+
 from nebula.commands import start_server
+
 
 def cli_parser():
     parser = argparse.ArgumentParser(description="Manage your web server.")

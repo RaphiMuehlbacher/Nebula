@@ -1,13 +1,16 @@
 # commands.py
-from nebula.server import TCPServer
+import traceback
+
+from nebula.server import MyTCPServer, RequestHandler
 import os
 import importlib.resources
 
 
 def start_server(host, port):
     project_name = os.getenv('NEBULA_SETTINGS')
-    tcpserver = TCPServer(host, port, project_name)
-    tcpserver.start()
+    server_address = (host, port)
+    server = MyTCPServer(server_address, RequestHandler, project_name)
+    server.serve_forever()
 
 
 def start_project(project_name):

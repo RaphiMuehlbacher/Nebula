@@ -4,22 +4,23 @@ import os
 import re
 import socket
 import sys
-import traceback
 from typing import Callable
 from urllib.parse import parse_qs
+import socketserver
+
+from rich.console import Console
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler, FileSystemEvent
-from watchdog.observers.api import BaseObserver
 
 from nebula.utils import HTTPResponse
 
 # Define global settings
 HOST, PORT = '', 8080
+console = Console()
 
 
 def load_urlpatterns_from_settings(settings_module_path):
     try:
-        # Import the settings module dynamically
         spec = importlib.util.spec_from_file_location("settings", settings_module_path)
         settings = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(settings)
@@ -40,16 +41,8 @@ def load_urlpatterns_from_settings(settings_module_path):
 
         return url_conf.urlpatterns
 
-    except KeyboardInterrupt:
-        print("hallo")
-        sys.exit(0)
-
-    except Exception as e:
-        exc_type, exc_value, exc_tb = sys.exc_info()
-
-        tb = traceback.TracebackException(exc_type, exc_value, exc_tb)
-        print("".join(tb.format_exception_only()))
-        return None
+    except Exception:
+        console.print_exception()
 
 
 def get_compiled_urlpatterns(urlpatterns: dict[str, Callable[..., HTTPResponse]]) -> list[tuple[re.Pattern[str], Callable[..., HTTPResponse]]]:
@@ -95,14 +88,8 @@ def handle_request(request: str, urlpatterns) -> HTTPResponse:
 
             return HTTPResponse("Page not found", 404)
 
-    except KeyboardInterrupt:
-        sys.exit(0)
-
-    except Exception as e:
-        exc_type, exc_value, exc_tb = sys.exc_info()
-
-        tb = traceback.TracebackException(exc_type, exc_value, exc_tb)
-        print("".join(tb.format_exception_only()))
+    except Exception:
+        console.print_exception()
 
 
 class Request:
@@ -113,7 +100,7 @@ class Request:
 
 
 class FileChangeHandler(FileSystemEventHandler):
-    def __init__(self, server: "TCPServer"):
+    def __init__(self, server: "MyTCPServer"):
         self.server = server
 
     def on_any_event(self, event: FileSystemEvent) -> None:
@@ -128,58 +115,48 @@ class FileChangeHandler(FileSystemEventHandler):
         return ignore
 
 
-class TCPServer:
-    def __init__(self, host, port, settings_module_path):
-        self.host = host
-        self.port = port
-        self.settings_module_path = settings_module_path
-        self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-    def start(self):
-        """
-        Starts the web server and listens for incoming connections.
-        This function binds to the specified host and port, listens for incoming
-        connections, and handles each client request in a loop.
-        """
-        self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server_socket.bind((self.host, self.port))
-        self.server_socket.listen()
-
-        urlpatterns = load_urlpatterns_from_settings(self.settings_module_path)
-
-        observer = Observer()
-        event_handler = FileChangeHandler(self)
-        observer.schedule(event_handler, path='.', recursive=True)
-        observer.start()
-
+class RequestHandler(socketserver.BaseRequestHandler):
+    def handle(self):
         try:
-            while True:
-                client_connection, client_address = self.server_socket.accept()
-                request = client_connection.recv(1024).decode()
+            request = self.request.recv(1024).decode().strip()
+            response = handle_request(request, self.server.urlpatterns)
+            self.request.sendall(str(response).encode())
+        except Exception:
+            console.print_exception()
+            response = HTTPResponse("Internal Server Error", 500)
+            self.request.sendall(str(response).encode())
 
-                response = handle_request(request, urlpatterns)
-                client_connection.sendall(str(response).encode())
-                client_connection.close()
+
+class MyTCPServer(socketserver.TCPServer):
+    def __init__(self, server_address, RequestHandlerClass, settings_module_path):
+        self.settings_module_path = settings_module_path
+        self.urlpatterns = load_urlpatterns_from_settings(settings_module_path)
+        super().__init__(server_address, RequestHandlerClass)
+
+    def restart(self):
+        self.server_close()
+        print(f"""
+Starting development server at http://{self.server_address[0]}:{self.server_address[1]}/
+Quit the server with CTRL-BREAK.
+""")
+        os.execv(sys.executable, [sys.executable] + sys.argv)
+
+    def start_observer(self):
+        event_handler = FileChangeHandler(self)
+        self.observer = Observer()
+        self.observer.schedule(event_handler, path='.', recursive=True)
+        self.observer.start()
+
+    def serve_forever(self):
+        self.start_observer()
+        try:
+            super().serve_forever()
         except KeyboardInterrupt:
             print("Shutting down server...")
         finally:
-            observer.stop()
-            observer.join()
-            self.server_socket.close()
+            self.cleanup()
 
-    def restart(self):
-        """Restarts the server by stopping the current instance and starting a new one."""
-        try:
-            self.server_socket.close()
-            print("Closing server socket...")
-        except Exception as e:
-            print(f"Error closing server socket: {e}")
-
-        try:
-            print("Restarting the server...")
-            os.execv(sys.executable, [sys.executable] + sys.argv)
-        except KeyboardInterrupt:
-            sys.exit(0)
-        except Exception as e:
-            print(f"Error restarting server: {e}")
-            traceback.print_exc()
+    def cleanup(self):
+        if hasattr(self, 'observer'):
+            self.observer.stop()
+            self.observer.join()

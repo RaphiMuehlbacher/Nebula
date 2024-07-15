@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='Nebula-web',
+    name='nebula-web',
     version='0.1.0',
     description='A custom web server framework',
     long_description=open('README.md').read(),
@@ -23,7 +23,7 @@ setup(
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
-        'Topic :: Software Development :: Libraries :: Application Frameworks',
+        'Topic :: Software Development :: Libraries :: Application Fra  meworks',
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.12',
