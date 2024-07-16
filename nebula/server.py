@@ -3,19 +3,16 @@ import importlib.util
 import os
 import re
 import socket
-import sys
 from typing import Callable
 from urllib.parse import parse_qs
-import socketserver
 
 from rich.console import Console
-from watchdog.observers import Observer
-from watchdog.events import FileSystemEventHandler, FileSystemEvent
+from watchdog.events import FileSystemEventHandler
 
 from nebula.utils import HTTPResponse
 
 # Define global settings
-HOST, PORT = '', 8080
+HOST, PORT = '', 40000
 console = Console()
 
 
@@ -55,7 +52,7 @@ def get_compiled_urlpatterns(urlpatterns: dict[str, Callable[..., HTTPResponse]]
     return compiled_urlpatterns
 
 
-def handle_request(request: str, urlpatterns) -> HTTPResponse:
+def handle_request(request: str) -> HTTPResponse:
     try:
         """Handles incoming HTTP requests and returns the appropriate response."""
 
@@ -63,6 +60,7 @@ def handle_request(request: str, urlpatterns) -> HTTPResponse:
         request_method, request_path, _ = request_line.split()
 
         settings_file = os.getenv("NEBULA_SETTINGS")
+        urlpatterns = load_urlpatterns_from_settings(settings_file)
         compiled_urlpatterns = get_compiled_urlpatterns(urlpatterns)
 
         if request_method == "GET":
@@ -100,63 +98,46 @@ class Request:
 
 
 class FileChangeHandler(FileSystemEventHandler):
-    def __init__(self, server: "MyTCPServer"):
-        self.server = server
+    def __init__(self, restart_server):
+        super().__init__()
+        self.restart_server = restart_server
 
-    def on_any_event(self, event: FileSystemEvent) -> None:
-        if not self.should_ignore(event.src_path):
-            print(f'File {event.src_path} changed. Restarting server...')
-            self.server.restart()
+    def on_modified(self, event):
+        if event.src_path.endswith('.py') and not self.should_ignore(event.src_path):
+            self.restart_server()
 
     @staticmethod
     def should_ignore(path: str) -> bool:
         parts = path.split(os.sep)[1:]
-        ignore = any(part.startswith('.') for part in parts if part)
+        ignore = any(part.startswith('.') or part.startswith('_') for part in parts if part)
         return ignore
 
 
-class RequestHandler(socketserver.BaseRequestHandler):
-    def handle(self):
-        try:
-            request = self.request.recv(1024).decode().strip()
-            response = handle_request(request, self.server.urlpatterns)
-            self.request.sendall(str(response).encode())
-        except Exception:
-            console.print_exception()
-            response = HTTPResponse("Internal Server Error", 500)
-            self.request.sendall(str(response).encode())
+class TCPServer:
+    def __init__(self, host, port):
+        self.host = host
+        self.port = port
+
+    def start(self):
+        server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        server_socket.bind((self.host, self.port))
+        server_socket.listen()
+
+        print("Listening at", server_socket.getsockname())
+
+        while True:
+            client_connection, client_address = server_socket.accept()
+            print("Connected to:", client_address)
+            request = client_connection.recv(1024).decode()
+            if not request:
+                continue
+
+            response = handle_request(request)
+            client_connection.sendall(str(response).encode())
+            client_connection.close()
 
 
-class MyTCPServer(socketserver.TCPServer):
-    def __init__(self, server_address, RequestHandlerClass, settings_module_path):
-        self.settings_module_path = settings_module_path
-        self.urlpatterns = load_urlpatterns_from_settings(settings_module_path)
-        super().__init__(server_address, RequestHandlerClass)
-
-    def restart(self):
-        self.server_close()
-        print(f"""
-Starting development server at http://{self.server_address[0]}:{self.server_address[1]}/
-Quit the server with CTRL-BREAK.
-""")
-        os.execv(sys.executable, [sys.executable] + sys.argv)
-
-    def start_observer(self):
-        event_handler = FileChangeHandler(self)
-        self.observer = Observer()
-        self.observer.schedule(event_handler, path='.', recursive=True)
-        self.observer.start()
-
-    def serve_forever(self):
-        self.start_observer()
-        try:
-            super().serve_forever()
-        except KeyboardInterrupt:
-            print("Shutting down server...")
-        finally:
-            self.cleanup()
-
-    def cleanup(self):
-        if hasattr(self, 'observer'):
-            self.observer.stop()
-            self.observer.join()
+def start_server():
+    tcpserver = TCPServer(HOST, PORT)
+    tcpserver.start()

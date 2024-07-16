@@ -1,16 +1,43 @@
 # commands.py
+import sys
+import time
 import traceback
 
-from nebula.server import MyTCPServer, RequestHandler
+import subprocess
 import os
 import importlib.resources
 
+from watchdog.observers import Observer
+
+from nebula.server import FileChangeHandler
+
 
 def start_server(host, port):
-    project_name = os.getenv('NEBULA_SETTINGS')
-    server_address = (host, port)
-    server = MyTCPServer(server_address, RequestHandler, project_name)
-    server.serve_forever()
+    global server_process
+    server_process = subprocess.Popen([sys.executable, '-c', 'from nebula.server import start_server; start_server()'])
+
+    event_handler = FileChangeHandler(restart_server)
+    observer = Observer()
+    observer.schedule(event_handler, '.', recursive=True)
+    observer.start()
+
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        observer.stop()
+        observer.join()
+        if server_process:
+            server_process.terminate()
+            server_process.wait()
+
+
+def restart_server():
+    global server_process
+    if server_process.poll() is None:  # Check if the process is still running
+        server_process.terminate()
+        server_process.wait()  # Ensure the process has terminated before restarting
+    server_process = subprocess.Popen([sys.executable, '-c', 'from nebula.server import start_server; start_server()'])
 
 
 def start_project(project_name):
