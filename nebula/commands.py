@@ -14,16 +14,20 @@ from nebula.server import FileChangeHandler
 
 def start_server(host, port):
     global server_process
+    print(f"""
+Starting development server at http://{host}:{port}/
+Quit the server with CTRL-BREAK.
+""")
     server_process = subprocess.Popen([sys.executable, '-c', 'from nebula.server import start_server; start_server()'])
 
-    event_handler = FileChangeHandler(restart_server)
+    event_handler = FileChangeHandler(restart_server, (host, port))
     observer = Observer()
     observer.schedule(event_handler, '.', recursive=True)
     observer.start()
 
     try:
         while True:
-            time.sleep(1)
+            pass
     except KeyboardInterrupt:
         observer.stop()
         observer.join()
@@ -34,9 +38,9 @@ def start_server(host, port):
 
 def restart_server():
     global server_process
-    if server_process.poll() is None:  # Check if the process is still running
+    if server_process.poll() is None:
         server_process.terminate()
-        server_process.wait()  # Ensure the process has terminated before restarting
+        server_process.wait()
     server_process = subprocess.Popen([sys.executable, '-c', 'from nebula.server import start_server; start_server()'])
 
 

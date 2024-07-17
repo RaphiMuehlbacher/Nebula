@@ -3,6 +3,7 @@ import importlib.util
 import os
 import re
 import socket
+import time
 from typing import Callable
 from urllib.parse import parse_qs
 
@@ -52,15 +53,13 @@ def get_compiled_urlpatterns(urlpatterns: dict[str, Callable[..., HTTPResponse]]
     return compiled_urlpatterns
 
 
-def handle_request(request: str) -> HTTPResponse:
+def handle_request(request: str, urlpatterns) -> HTTPResponse:
     try:
         """Handles incoming HTTP requests and returns the appropriate response."""
 
         request_line = request.splitlines()[0]
         request_method, request_path, _ = request_line.split()
 
-        settings_file = os.getenv("NEBULA_SETTINGS")
-        urlpatterns = load_urlpatterns_from_settings(settings_file)
         compiled_urlpatterns = get_compiled_urlpatterns(urlpatterns)
 
         if request_method == "GET":
@@ -98,13 +97,22 @@ class Request:
 
 
 class FileChangeHandler(FileSystemEventHandler):
-    def __init__(self, restart_server):
+    def __init__(self, restart_server, server_address):
         super().__init__()
         self.restart_server = restart_server
+        self.server_address = server_address
+        self.last_restart_time = 0
+        self.cooldown_period = 0.5
 
     def on_modified(self, event):
-        if event.src_path.endswith('.py') and not self.should_ignore(event.src_path):
+        current_time = time.time()
+        if event.src_path.endswith('.py') and not self.should_ignore(event.src_path) and (current_time - self.last_restart_time) > self.cooldown_period:
+            print(f"""
+Starting development server at http://{self.server_address[0]}:{self.server_address[1]}/
+Quit the server with CTRL-BREAK.
+""")
             self.restart_server()
+            self.last_restart_time = current_time
 
     @staticmethod
     def should_ignore(path: str) -> bool:
@@ -117,25 +125,25 @@ class TCPServer:
     def __init__(self, host, port):
         self.host = host
         self.port = port
+        self.urlpatterns = load_urlpatterns_from_settings(os.getenv('NEBULA_SETTINGS'))
 
     def start(self):
-        server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        server_socket.bind((self.host, self.port))
-        server_socket.listen()
+        if self.urlpatterns:
+            server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            server_socket.bind((self.host, self.port))
+            server_socket.listen()
 
-        print("Listening at", server_socket.getsockname())
+            while True:
+                client_connection, client_address = server_socket.accept()
 
-        while True:
-            client_connection, client_address = server_socket.accept()
-            print("Connected to:", client_address)
-            request = client_connection.recv(1024).decode()
-            if not request:
-                continue
+                request = client_connection.recv(1024).decode()
+                if not request:
+                    continue
 
-            response = handle_request(request)
-            client_connection.sendall(str(response).encode())
-            client_connection.close()
+                response = handle_request(request, self.urlpatterns)
+                client_connection.sendall(str(response).encode())
+                client_connection.close()
 
 
 def start_server():
