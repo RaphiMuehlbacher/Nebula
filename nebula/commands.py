@@ -10,15 +10,18 @@ import importlib.resources
 from watchdog.observers import Observer
 
 from nebula.server import FileChangeHandler
+HOST, PORT = "127.0.0.1", 40000
 
 
 def start_server(host, port):
     global server_process
+    global HOST, PORT
+    HOST, PORT = host, port
     print(f"""
 Starting development server at http://{host}:{port}/
 Quit the server with CTRL-BREAK.
 """)
-    server_process = subprocess.Popen([sys.executable, '-c', 'from nebula.server import start_server; start_server()'])
+    server_process = subprocess.Popen([sys.executable, '-c', 'from nebula.server import start_server; start_server(host, port)'])
 
     event_handler = FileChangeHandler(restart_server, (host, port))
     observer = Observer()
@@ -41,7 +44,7 @@ def restart_server():
     if server_process.poll() is None:
         server_process.terminate()
         server_process.wait()
-    server_process = subprocess.Popen([sys.executable, '-c', 'from nebula.server import start_server; start_server()'])
+    server_process = subprocess.Popen([sys.executable, '-c', 'from nebula.server import start_server; start_server(HOST, PORT)'])
 
 
 def start_project(project_name):

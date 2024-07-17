@@ -2,7 +2,7 @@
 import os
 from functools import lru_cache
 from typing import Any
-
+import json
 from jinja2 import Environment, FileSystemLoader
 
 STATIC_DIR = 'static'
@@ -24,6 +24,26 @@ class HTTPResponse:
             f"HTTP/1.1 {self.status_code} {status_text[self.status_code]}"
         ] + [f"{k}: {v}" for k, v in self.headers.items()] + ["", self.content]
         return "\r\n".join(response_lines)
+
+class JsonResponse:
+    """Generates a basic JSON response with a given data."""
+    def __init__(self, data: dict, status_code: int = 200, headers: dict = None):
+        self.data = data
+        self.status_code = status_code
+        self.headers = headers or {}
+        self.headers['Content-Type'] = 'application/json'
+
+    def __str__(self) -> str:
+        response_lines = [
+            f"HTTP/1.1 {self.status_code} {self.get_status_text()}",
+            f"Content-Type: application/json"
+        ] + [f"{k}: {v}" for k, v in self.headers.items()] + ["", json.dumps(self.data)]
+        return "\r\n".join(response_lines)
+
+    def get_status_text(self) -> str:
+        status_text = {200: "OK", 404: "Not Found", 405: "Method Not Allowed", 500: "Internal Server Error"}
+        return status_text.get(self.status_code, "Unknown Status")
+
 
 
 def render(template_name: str, context: dict[str, Any] = None) -> HTTPResponse:

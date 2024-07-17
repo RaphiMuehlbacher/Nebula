@@ -13,7 +13,6 @@ from watchdog.events import FileSystemEventHandler
 from nebula.utils import HTTPResponse
 
 # Define global settings
-HOST, PORT = '', 40000
 console = Console()
 
 
@@ -146,6 +145,6 @@ class TCPServer:
                 client_connection.close()
 
 
-def start_server():
-    tcpserver = TCPServer(HOST, PORT)
+def start_server(host, port):
+    tcpserver = TCPServer(host, port)
     tcpserver.start()

@@ -12,7 +12,7 @@ def cli_parser():
 
     runserver_parser = subparser.add_parser("runserver", help="Start the web server")
     runserver_parser.add_argument("--host", default="127.0.0.1", help="Host to bind the server")
-    runserver_parser.add_argument("--port", default=8080, help="Port to bind the server")
+    runserver_parser.add_argument("--port", default=40000, help="Port to bind the server")
 
     return parser
 
